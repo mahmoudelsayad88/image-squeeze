@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f0c29">
+<title>Image Squeeze</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--a:#7c5cff;--b:#00d4ff;--c:#ff4ecd}
+body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;
+background:radial-gradient(circle at 15% 0%,#3a2a8f 0,transparent 45%),radial-gradient(circle at 90% 100%,#0a5a7a 0,transparent 45%),#0f0c29;
+padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 28px)}
+.wrap{max-width:520px;margin:auto;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:26px;font-weight:800;background:linear-gradient(90deg,var(--b),var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{margin:4px 0 0;opacity:.7;font-size:14px}
+.card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(14px);border-radius:22px;padding:16px;animation:up .5s both}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.btn{position:relative;overflow:hidden;border:0;border-radius:16px;padding:15px 18px;font-size:16px;font-weight:700;color:#fff;width:100%;cursor:pointer;
+background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 8px 24px rgba(124,92,255,.4);transition:transform .15s,box-shadow .15s,opacity .2s}
+.btn:active{transform:scale(.95);box-shadow:0 3px 10px rgba(124,92,255,.4)}
+.btn.alt{background:linear-gradient(135deg,#ff4ecd,#ff8a3d);box-shadow:0 8px 24px rgba(255,78,205,.35)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:rip .6s ease-out;pointer-events:none}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+.pick{display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 10px;border:2px dashed rgba(255,255,255,.3);border-radius:18px;cursor:pointer;animation:pulse 2.4s infinite}
+.pick span{font-size:44px}
+@keyframes pulse{50%{border-color:var(--b);box-shadow:0 0 22px rgba(0,212,255,.25)}}
+.seg{position:relative;display:flex;background:rgba(0,0,0,.3);border-radius:16px;padding:4px}
+.seg button{flex:1;position:relative;z-index:1;background:none;border:0;color:#fff;padding:12px 4px;font-size:14px;font-weight:700;opacity:.7;transition:opacity .2s,transform .15s}
+.seg button:active{transform:scale(.92)}
+.seg button.on{opacity:1}
+.pill{position:absolute;top:4px;bottom:4px;border-radius:12px;background:linear-gradient(135deg,var(--a),var(--b));transition:left .35s cubic-bezier(.3,1.4,.5,1),width .35s}
+.chips{display:flex;gap:8px;margin-top:10px}
+.chip{flex:1;text-align:center;padding:9px;border-radius:12px;background:rgba(255,255,255,.08);font-size:13px;border:1px solid transparent;transition:.2s}
+.chip.on{border-color:var(--b);background:rgba(0,212,255,.15)}
+.hint{font-size:12px;opacity:.6;margin-top:8px;line-height:1.6}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp figure{margin:0;text-align:center}
+.cmp img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;background:#0003}
+.cmp figcaption{margin-top:6px;font-size:13px}
+.cmp b{display:block;font-size:16px}
+.save{margin-top:14px;text-align:center;font-weight:800;font-size:15px;padding:10px;border-radius:12px;background:rgba(46,230,140,.15);color:#5dffb0}
+.bar{height:4px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.1);margin-top:12px}
+.bar i{display:block;height:100%;width:40%;background:linear-gradient(90deg,var(--b),var(--c));animation:sl 1s infinite linear}
+@keyframes sl{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+.hide{display:none!important}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translate(-50%,120px);background:#1c1a3a;border:1px solid rgba(255,255,255,.2);padding:12px 20px;border-radius:14px;transition:transform .4s cubic-bezier(.3,1.4,.5,1);z-index:9;max-width:90%;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div><h1>Image Squeeze 🗜️</h1><p class="sub">قلّل حجم الصورة مع الحفاظ على جودتها</p></div>
+
+  <input id="file" type="file" accept="image/*" hidden>
+  <div class="card" id="pickCard">
+    <div class="pick" id="pick"><span>🖼️</span><b>اختر صورة من الموبايل</b><small style="opacity:.6">JPG · PNG · WebP</small></div>
+  </div>
+
+  <div class="card hide" id="cmpCard">
+    <div class="cmp">
+      <figure><img id="imgA" alt=""><figcaption>الأصلية<b id="szA">-</b></figcaption></figure>
+      <figure><img id="imgB" alt=""><figcaption>بعد الضغط<b id="szB">-</b></figcaption></figure>
+    </div>
+    <div class="bar hide" id="bar"><i></i></div>
+    <div class="save hide" id="saveTag"></div>
+  </div>
+
+  <div class="card hide" id="ctrlCard">
+    <div class="seg" id="seg">
+      <div class="pill" id="pill"></div>
+      <button data-l="low">Low · أصغر حجم</button>
+      <button data-l="medium">Medium · متوازن</button>
+      <button data-l="high">High · أعلى جودة</button>
+    </div>
+    <div class="hint" id="levelHint"></div>
+    <div class="chips" id="fmt">
+      <div class="chip on" data-f="image/jpeg">JPEG · متوافق مع الكل</div>
+      <div class="chip" data-f="image/webp">WebP · أصغر بنفس الجودة</div>
+    </div>
+  </div>
+
+  <div class="hide" id="actions" style="display:flex;flex-direction:column;gap:10px">
+    <button class="btn" id="saveBtn">💾 حفظ في المعرض</button>
+    <button class="btn alt" id="newBtn">📂 اختيار صورة أخرى</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const TARGET=245*1024;
+const LEVELS={
+  low:{max:1600,q:null,hint:'أقل من 250 كيلوبايت — يقلل الأبعاد تلقائياً لو لزم مع أفضل جودة ممكنة.'},
+  medium:{max:2560,q:.78,hint:'توازن ممتاز بين الحجم والجودة، الفرق غير ملحوظ للعين.'},
+  high:{max:4096,q:.9,hint:'أعلى جودة ممكنة مع تقليل الحجم بشكل جيد.'}
+};
+let bmp=null,level='low',fmt='image/jpeg',out=null,busy=0;
+
+const fmtSize=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.round(b/1024)+' KB';
+const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2600)};
+
+// ripple on all buttons
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('.btn');if(!b)return;
+  const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height)/2,x=document.createElement('span');
+  x.className='rip';x.style.cssText=`width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px`;
+  b.appendChild(x);setTimeout(()=>x.remove(),600);
+});
+
+function movePill(){
+  const b=$(`#seg [data-l=${level}]`),p=$('#pill');
+  p.style.left=b.offsetLeft+'px';p.style.width=b.offsetWidth+'px';
+  $$('#seg button').forEach(x=>x.classList.toggle('on',x===b));
+  $('#levelHint').textContent=LEVELS[level].hint;
+}
+
+const enc=(scale,q)=>{
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(bmp.width*scale));c.height=Math.max(1,Math.round(bmp.height*scale));
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+  g.imageSmoothingQuality='high';g.drawImage(bmp,0,0,c.width,c.height);
+  return new Promise(r=>c.toBlob(r,fmt,q));
+};
+
+async function compress(){
+  const L=LEVELS[level],base=Math.min(1,L.max/Math.max(bmp.width,bmp.height));
+  if(L.q)return enc(base,L.q);
+  let s=base;
+  for(let i=0;i<10;i++){
+    let lo=.5,hi=.88,best=null;
+    for(let j=0;j<6;j++){const m=(lo+hi)/2,b=await enc(s,m);if(b.size<=TARGET){best=b;lo=m}else hi=m}
+    if(best)return best;
+    s*=.85; // quality floor reached: shrink dimensions slightly instead of making it blocky
+  }
+  return enc(s,.5);
+}
+
+async function run(){
+  if(!bmp)return;
+  const id=++busy;
+  $('#bar').classList.remove('hide');$('#saveBtn').disabled=true;
+  await new Promise(r=>setTimeout(r,30));
+  const blob=await compress();
+  if(id!==busy)return;
+  out=blob;
+  if($('#imgB').src)URL.revokeObjectURL($('#imgB').src);
+  $('#imgB').src=URL.createObjectURL(blob);
+  $('#szB').textContent=fmtSize(blob.size);
+  const orig=$('#file').files[0].size,pct=Math.round((1-blob.size/orig)*100);
+  const t=$('#saveTag');t.classList.remove('hide');
+  t.textContent=pct>0?`وفّرت ${pct}% من المساحة 🎉`:'الصورة الأصلية مضغوطة بالفعل';
+  $('#bar').classList.add('hide');$('#saveBtn').disabled=false;
+}
+
+$('#pick').onclick=$('#newBtn').onclick=()=>{$('#file').value='';$('#file').click()};
+$('#file').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{bmp=await createImageBitmap(f,{imageOrientation:'from-image'})}catch{toast('تعذر فتح الصورة');return}
+  $('#imgA').src=URL.createObjectURL(f);$('#szA').textContent=fmtSize(f.size);
+  $('#pickCard').classList.add('hide');
+  ['cmpCard','ctrlCard','actions'].forEach(i=>$('#'+i).classList.remove('hide'));
+  $('#actions').style.display='flex';
+  requestAnimationFrame(movePill);run();
+};
+$$('#seg button').forEach(b=>b.onclick=()=>{level=b.dataset.l;movePill();run()});
+$$('#fmt .chip').forEach(c=>c.onclick=()=>{fmt=c.dataset.f;$$('#fmt .chip').forEach(x=>x.classList.toggle('on',x===c));run()});
+
+const toDataURL=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+$('#saveBtn').onclick=async()=>{
+  if(!out)return;
+  const name='squeeze_'+Date.now(),ext=fmt==='image/webp'?'webp':'jpg',data=await toDataURL(out);
+  const M=window.Capacitor?.Plugins?.Media;
+  try{
+    if(!M)throw 0;
+    let albumIdentifier;
+    try{
+      await M.createAlbum({name:'ImageSqueeze'}).catch(()=>{});
+      const {path}=await M.getAlbumsPath();albumIdentifier=path+'/ImageSqueeze';
+    }catch{}
+    await M.savePhoto({path:data,fileName:name,...(albumIdentifier?{albumIdentifier}:{})});
+    toast('✅ تم الحفظ في المعرض (ألبوم ImageSqueeze)');
+  }catch{
+    const a=document.createElement('a');a.href=data;a.download=name+'.'+ext;a.click();
+    toast('تم تنزيل الصورة');
+  }
+};
+window.addEventListener('resize',movePill);
+level='low';movePill();
+</script>
+</body>
+</html>
