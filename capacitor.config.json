@@ -1,0 +1,6 @@
+{
+  "appId": "com.mahmoud.imagesqueeze",
+  "appName": "Image Squeeze",
+  "webDir": "www",
+  "plugins": { "Media": { "androidGalleryMode": false } }
+}
